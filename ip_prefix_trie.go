@@ -1,0 +1,124 @@
+package ip_prefix_trie
+
+import (
+	"encoding/binary"
+	"fmt"
+	"net"
+)
+
+type TrieNode struct {
+	LNode, RNode *TrieNode
+	Payload      interface{}
+}
+
+// very large uint, needed for IPv6
+type Uint128 struct {
+	H, L uint64
+}
+
+// shift right by n, used to extract single bits
+func (u Uint128) ShiftRight(n uint) Uint128 {
+	newH := u.H >> n
+	newL := u.L >> n
+	if n <= 64 {
+		newL |= u.H << (64 - n)
+	} else {
+		newL = u.H >> (n - 64)
+	}
+	return Uint128{newH, newL}
+}
+
+// used to fill our custom type, basically the same as FromBytes
+func ip2int(ip net.IP) Uint128 {
+	hi := binary.BigEndian.Uint64(ip[:8])
+	lo := binary.BigEndian.Uint64(ip[8:])
+	return Uint128{hi, lo}
+}
+
+// Insert data for a number of prefixes below a given root node
+//
+// Parameters:
+//	- trie is a (root) TrieNode
+//	- payload is the data stored for a prefix
+//	- prefixes is a slice of prefixes
+func (t *TrieNode) Insert(payload interface{}, prefixes []string) {
+	for _, cidr := range prefixes {
+		current_node := t
+		ip, prefix, err := net.ParseCIDR(cidr)
+		if err != nil {
+			fmt.Printf("Error parsing prefix: %v\n", err)
+		}
+		plen, max_plen := prefix.Mask.Size()
+		var bits Uint128 = ip2int(ip)
+		for i := 0; i <= plen; i++ {
+			next_bit := bits.ShiftRight(uint(max_plen-i)).L & 1
+			if next_bit == 0 {
+				if current_node.LNode == nil {
+					current_node.LNode = new(TrieNode)
+					current_node.LNode.Payload = current_node.Payload
+				}
+				current_node = current_node.LNode
+			} else if next_bit == 1 {
+				if current_node.RNode == nil {
+					current_node.RNode = new(TrieNode)
+					current_node.RNode.Payload = current_node.Payload
+				}
+				current_node = current_node.RNode
+			}
+		}
+		current_node.Payload = payload         // needed, might be set by less specific
+		set_for_subtrie(current_node, payload) // overwrites all empty nodes below this
+	}
+}
+
+// Finish an insertion by writing the content data recursively.
+// An example why this is necessary:
+//	1. Prefix A is contained in prefix B, i.e. A is more specific than B
+//	2. A was added before B
+//	3. B needs to match more specific prefixes which are not in A
+//	4. TrieNodes below B exist as a connection to A, and may be
+//	   uninitialised if the differnce between both prefix lengths is > 1
+//	5. If such empty TrieNodes exist, they need to be updated to B's
+//	   content
+func set_for_subtrie(node *TrieNode, payload interface{}) {
+	if node != nil {
+		// this check prevents more specific prefixes which already
+		// exist in the trie from being overwritten, if they're
+		// initialised
+		// Second branch in OR is needed to call recursively.
+		if node.Payload == nil || node.Payload == payload {
+			node.Payload = payload
+			set_for_subtrie(node.LNode, payload)
+			set_for_subtrie(node.RNode, payload)
+		}
+	}
+}
+
+// Match an IP to the prefixes and return the correct content.
+// Selects IPv4 or IPv6 mode, i.e. the correct prefix length, automatically.
+func (t *TrieNode) Lookup(ip net.IP) interface{} {
+	var max_plen int
+	current_node := t
+
+	if ip.To4() == nil {
+		max_plen = 128
+	} else {
+		max_plen = 32
+	}
+	var bits Uint128 = ip2int(ip)
+	for i := uint(max_plen); i > 0; i-- {
+		next_bit := bits.ShiftRight(i).L & 1
+		if next_bit == 0 {
+			if current_node.LNode == nil {
+				break
+			}
+			current_node = current_node.LNode
+		} else if next_bit == 1 {
+			if current_node.RNode == nil {
+				break
+			}
+			current_node = current_node.RNode
+		}
+	}
+	return current_node.Payload
+}
