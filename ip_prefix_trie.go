@@ -41,9 +41,9 @@ func ip2int(ip net.IP) Uint128 {
 //	- trie is a (root) TrieNode
 //	- payload is the data stored for a prefix
 //	- prefixes is a slice of prefixes
-func (t *TrieNode) Insert(payload interface{}, prefixes []string) {
+func (root *TrieNode) Insert(payload interface{}, prefixes []string) {
 	for _, cidr := range prefixes {
-		current_node := t
+		current_node := root
 		ip, prefix, err := net.ParseCIDR(cidr)
 		if err != nil {
 			fmt.Printf("Error parsing prefix: %v\n", err)
