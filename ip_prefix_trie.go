@@ -64,8 +64,8 @@ func (root *TrieNode) Insert(payload interface{}, prefixes []string) {
 			}
 			current_node = *next_node
 		}
-		current_node.Payload = payload         // needed, might be set by less specific
-		set_for_subtrie(current_node, payload) // overwrites all empty nodes below this
+		current_node.Payload = payload        // needed, might be set by less specific
+		current_node.set_for_subtrie(payload) // overwrites all empty nodes below this
 	}
 }
 
@@ -78,7 +78,7 @@ func (root *TrieNode) Insert(payload interface{}, prefixes []string) {
 //	   uninitialised if the differnce between both prefix lengths is > 1
 //	5. If such empty TrieNodes exist, they need to be updated to B's
 //	   content
-func set_for_subtrie(node *TrieNode, payload interface{}) {
+func (node *TrieNode) set_for_subtrie(payload interface{}) {
 	if node != nil {
 		// this check prevents more specific prefixes which already
 		// exist in the trie from being overwritten, if they're
@@ -86,8 +86,8 @@ func set_for_subtrie(node *TrieNode, payload interface{}) {
 		// Second branch in OR is needed to call recursively.
 		if node.Payload == nil || node.Payload == payload {
 			node.Payload = payload
-			set_for_subtrie(node.LNode, payload)
-			set_for_subtrie(node.RNode, payload)
+			node.LNode.set_for_subtrie(payload)
+			node.RNode.set_for_subtrie(payload)
 		}
 	}
 }
@@ -97,7 +97,9 @@ func set_for_subtrie(node *TrieNode, payload interface{}) {
 func (root *TrieNode) Lookup(ip net.IP) interface{} {
 	current_node := root
 
-	// find maximum prefix length depending on query
+	// Find maximum prefix length depending on query.
+	// Mind that the query has to match the Trie's IP version, else the
+	// results will be nonsense.
 	var max_plen int
 	if ip.To4() == nil {
 		max_plen = 128
