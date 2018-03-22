@@ -12,8 +12,8 @@ import (
 var v4_trie, v6_trie TrieNode
 
 func TestInsert(t *testing.T) {
-	v4_trie.Insert(123, []string{"192.168.0.0/24"})
-	v6_trie.Insert(123, []string{"2001:db8:a::/64"})
+	v4_trie.Insert(123, []string{"192.168.0.0/16"})
+	v6_trie.Insert(123, []string{"2001:db8:1234::/48"})
 }
 
 func TestLookupIPv4(t *testing.T) {
@@ -27,7 +27,7 @@ func TestLookupIPv4(t *testing.T) {
 }
 
 func TestLookupIPv6(t *testing.T) {
-	ip, _, _ := net.ParseCIDR("2001:db8:a::7/64")
+	ip, _, _ := net.ParseCIDR("2001:db8:1234::7/64")
 	matched_knr := v6_trie.Lookup(ip)
 	if matched_knr == nil || 123 != matched_knr.(int) {
 		t.Errorf("ERR: IP '%s' should match '123', was '%v'", ip, matched_knr)
@@ -68,18 +68,17 @@ func TestUint128ShiftLong(t *testing.T) {
 	}
 }
 
-func BenchmarkIPv4Lookup(b *testing.B) {
+func BenchmarkIPv4LookupHit(b *testing.B) {
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
 
 	for n := 0; n < b.N; n++ {
-		ip := net.IPv4(byte(r1.Int()), byte(r1.Int()), byte(r1.Int()), byte(r1.Int()))
-		// fmt.Println(ip.String())
+		ip := net.IPv4(192, 168, byte(r1.Int()), byte(r1.Int()))
 		v4_trie.Lookup(ip)
 	}
 }
 
-func BenchmarkIPv6Lookup(b *testing.B) {
+func BenchmarkIPv6LookupHit(b *testing.B) {
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
 
@@ -88,8 +87,37 @@ func BenchmarkIPv6Lookup(b *testing.B) {
 		binary.LittleEndian.PutUint64(ip_data, r1.Uint64())
 		ip_data[0] = 0x20
 		ip_data[1] = 0x01
+		ip_data[2] = 0x0d
+		ip_data[3] = 0xb8
+		ip_data[4] = 0x12
+		ip_data[5] = 0x34
 		ip := net.IP(ip_data)
-		// fmt.Println(ip.String())
+		v6_trie.Lookup(ip)
+	}
+}
+
+func BenchmarkIPv4LookupPropableMiss(b *testing.B) {
+	s1 := rand.NewSource(time.Now().UnixNano())
+	r1 := rand.New(s1)
+
+	for n := 0; n < b.N; n++ {
+		ip := net.IPv4(byte(r1.Int()), byte(r1.Int()), byte(r1.Int()), byte(r1.Int()))
+		v4_trie.Lookup(ip)
+	}
+}
+
+func BenchmarkIPv6LookupPropableMiss(b *testing.B) {
+	s1 := rand.NewSource(time.Now().UnixNano())
+	r1 := rand.New(s1)
+
+	for n := 0; n < b.N; n++ {
+		ip_data := make([]byte, 16)
+		binary.LittleEndian.PutUint64(ip_data, r1.Uint64())
+		ip_data[0] = 0x20
+		ip_data[1] = 0x01
+		ip_data[2] = 0x0d
+		ip_data[3] = 0xb8
+		ip := net.IP(ip_data)
 		v6_trie.Lookup(ip)
 	}
 }
