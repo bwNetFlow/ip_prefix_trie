@@ -97,27 +97,25 @@ func set_for_subtrie(node *TrieNode, payload interface{}) {
 // Match an IP to the prefixes and return the correct content.
 // Selects IPv4 or IPv6 mode, i.e. the correct prefix length, automatically.
 func (t *TrieNode) Lookup(ip net.IP) interface{} {
-	var max_plen int
 	current_node := t
 
+	// find maximum prefix length depending on query
+	var max_plen int
 	if ip.To4() == nil {
 		max_plen = 128
 	} else {
 		max_plen = 32
 	}
+
 	var bits Uint128 = ip2int(ip)
 	for i := uint(max_plen); i > 0; i-- {
 		next_bit := bits.ShiftRight(i).L & 1
-		if next_bit == 0 {
-			if current_node.LNode == nil {
-				break
-			}
+		if next_bit == 0 && current_node.LNode != nil {
 			current_node = current_node.LNode
-		} else if next_bit == 1 {
-			if current_node.RNode == nil {
-				break
-			}
+		} else if next_bit == 1 && current_node.RNode != nil {
 			current_node = current_node.RNode
+		} else {
+			break
 		}
 	}
 	return current_node.Payload
