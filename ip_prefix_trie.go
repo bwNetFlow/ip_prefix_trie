@@ -52,19 +52,17 @@ func (t *TrieNode) Insert(payload interface{}, prefixes []string) {
 		var bits Uint128 = ip2int(ip)
 		for i := 0; i <= plen; i++ {
 			next_bit := bits.ShiftRight(uint(max_plen-i)).L & 1
+			var next_node **TrieNode
 			if next_bit == 0 {
-				if current_node.LNode == nil {
-					current_node.LNode = new(TrieNode)
-					current_node.LNode.Payload = current_node.Payload
-				}
-				current_node = current_node.LNode
+				next_node = &current_node.LNode
 			} else if next_bit == 1 {
-				if current_node.RNode == nil {
-					current_node.RNode = new(TrieNode)
-					current_node.RNode.Payload = current_node.Payload
-				}
-				current_node = current_node.RNode
+				next_node = &current_node.RNode
 			}
+			if *next_node == nil {
+				*next_node = new(TrieNode)
+				(*next_node).Payload = current_node.Payload
+			}
+			current_node = *next_node
 		}
 		current_node.Payload = payload         // needed, might be set by less specific
 		set_for_subtrie(current_node, payload) // overwrites all empty nodes below this
