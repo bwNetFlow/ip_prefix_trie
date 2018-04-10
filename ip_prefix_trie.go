@@ -30,8 +30,8 @@ func (u Uint128) ShiftRight(n uint) Uint128 {
 
 // used to fill our custom type, basically the same as FromBytes
 func ip2int(ip net.IP) Uint128 {
-	hi := binary.BigEndian.Uint64(ip[:8])
-	lo := binary.BigEndian.Uint64(ip[8:])
+	hi := binary.BigEndian.Uint64(ip.To16()[:8])
+	lo := binary.BigEndian.Uint64(ip.To16()[8:])
 	return Uint128{hi, lo}
 }
 
