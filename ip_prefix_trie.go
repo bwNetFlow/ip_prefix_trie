@@ -30,8 +30,8 @@ func (u Uint128) ShiftRight(n uint) Uint128 {
 
 // used to fill our custom type, basically the same as FromBytes
 func ip2int(ip net.IP) Uint128 {
-	hi := binary.BigEndian.Uint64(ip.To16()[:8])
-	lo := binary.BigEndian.Uint64(ip.To16()[8:])
+	hi := binary.BigEndian.Uint64(ip[:8])
+	lo := binary.BigEndian.Uint64(ip[8:])
 	return Uint128{hi, lo}
 }
 
@@ -41,8 +41,9 @@ func ip2int(ip net.IP) Uint128 {
 //	- trie is a (root) TrieNode
 //	- payload is the data stored for a prefix
 //	- prefixes is a slice of prefixes
-func (t *TrieNode) Insert(payload interface{}, prefixes []string) {
+func (root *TrieNode) Insert(payload interface{}, prefixes []string) {
 	for _, cidr := range prefixes {
+		current_node := root
 		ip, prefix, err := net.ParseCIDR(cidr)
 		if err != nil {
 			fmt.Printf("Error parsing prefix: %v\n", err)
@@ -53,18 +54,18 @@ func (t *TrieNode) Insert(payload interface{}, prefixes []string) {
 			next_bit := bits.ShiftRight(uint(max_plen-i)).L & 1
 			var next_node **TrieNode
 			if next_bit == 0 {
-				next_node = &t.LNode
+				next_node = &current_node.LNode
 			} else if next_bit == 1 {
-				next_node = &t.RNode
+				next_node = &current_node.RNode
 			}
 			if *next_node == nil {
 				*next_node = new(TrieNode)
-				(*next_node).Payload = t.Payload
+				(*next_node).Payload = current_node.Payload
 			}
-			t = *next_node
+			current_node = *next_node
 		}
-		t.Payload = payload        // needed, might be set by less specific
-		t.set_for_subtrie(payload) // overwrites all empty nodes below this
+		current_node.Payload = payload        // needed, might be set by less specific
+		current_node.set_for_subtrie(payload) // overwrites all empty nodes below this
 	}
 }
 
@@ -93,7 +94,9 @@ func (node *TrieNode) set_for_subtrie(payload interface{}) {
 
 // Match an IP to the prefixes and return the correct content.
 // Selects IPv4 or IPv6 mode, i.e. the correct prefix length, automatically.
-func (t *TrieNode) Lookup(ip net.IP) interface{} {
+func (root *TrieNode) Lookup(ip net.IP) interface{} {
+	current_node := root
+
 	// Find maximum prefix length depending on query.
 	// Mind that the query has to match the Trie's IP version, else the
 	// results will be nonsense.
@@ -107,13 +110,13 @@ func (t *TrieNode) Lookup(ip net.IP) interface{} {
 	var bits Uint128 = ip2int(ip)
 	for i := uint(max_plen); i > 0; i-- {
 		next_bit := bits.ShiftRight(i).L & 1
-		if next_bit == 0 && t.LNode != nil {
-			t = t.LNode
-		} else if next_bit == 1 && t.RNode != nil {
-			t = t.RNode
+		if next_bit == 0 && current_node.LNode != nil {
+			current_node = current_node.LNode
+		} else if next_bit == 1 && current_node.RNode != nil {
+			current_node = current_node.RNode
 		} else {
 			break
 		}
 	}
-	return t.Payload
+	return current_node.Payload
 }
