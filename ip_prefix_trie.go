@@ -69,13 +69,9 @@ func (root *TrieNode) Insert(payload interface{}, prefixes []string) {
 			if *next_node == nil {
 				*next_node = new(TrieNode)
 				(*next_node).Payload = current_node.Payload
-				if current_node.Payload != nil {
-					fmt.Printf("Create new node with inherited CID %d.\n", current_node.Payload)
-				}
 			}
 			current_node = *next_node
 		}
-		fmt.Printf("Set the new node CID to %d.\n", payload)
 		current_node.Payload = payload        // needed, might be set by less specific
 		current_node.set_for_subtrie(payload) // overwrites empty nodes below (see func)
 	}
