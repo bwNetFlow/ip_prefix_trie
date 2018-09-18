@@ -57,7 +57,7 @@ func (root *TrieNode) Insert(payload interface{}, prefixes []string) {
 		plen, max_plen := prefix.Mask.Size()
 		var bits Uint128 = ip2int(ip)
 		// Iterate to the correct node under which we insert.
-		for i := 0; i <= plen; i++ {
+		for i := 0; i < plen; i++ {
 			next_bit := bits.ShiftRight(uint(max_plen-i)).L & 1
 			var next_node **TrieNode
 			if next_bit == 0 {
