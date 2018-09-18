@@ -36,6 +36,35 @@ func TestLookupIPv6(t *testing.T) {
 	}
 }
 
+func TestSubTrieCorrectness(t *testing.T) {
+	var my_trie TrieNode
+	my_trie.Insert(1, []string{"0.0.0.0/0"})
+	my_trie.Insert(3, []string{"255.255.255.255/32"})
+	my_trie.Insert(2, []string{"255.255.0.0/16"})
+	my_trie.Print("", true)
+	ip1, _, _ := net.ParseCIDR("0.0.0.1/32")
+	ip2, _, _ := net.ParseCIDR("255.255.0.1/32")
+	ip3, _, _ := net.ParseCIDR("255.255.255.255/32")
+	matched_knr1 := my_trie.Lookup(ip1)
+	if matched_knr1 == nil || 1 != matched_knr1.(int) {
+		t.Errorf("ERR: IP '%s' should match '1', was '%v'", ip1, matched_knr1)
+	} else {
+		t.Logf(" OK: IP '%s' matched KNR '1'", ip1)
+	}
+	matched_knr2 := my_trie.Lookup(ip2)
+	if matched_knr2 == nil || 2 != matched_knr2.(int) {
+		t.Errorf("ERR: IP '%s' should match '2', was '%v'", ip2, matched_knr2)
+	} else {
+		t.Logf(" OK: IP '%s' matched KNR '2'", ip2)
+	}
+	matched_knr3 := my_trie.Lookup(ip3)
+	if matched_knr3 == nil || 3 != matched_knr3.(int) {
+		t.Errorf("ERR: IP '%s' should match '3', was '%v'", ip3, matched_knr3)
+	} else {
+		t.Logf(" OK: IP '%s' matched KNR '3'", ip3)
+	}
+}
+
 func TestUint128Shift(t *testing.T) {
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)

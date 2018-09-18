@@ -68,36 +68,44 @@ func (root *TrieNode) Insert(payload interface{}, prefixes []string) {
 			// Insert.
 			if *next_node == nil {
 				*next_node = new(TrieNode)
-				(*next_node).Payload = current_node.Payload
 			}
 			current_node = *next_node
 		}
-		current_node.Payload = payload        // needed, might be set by less specific
-		current_node.set_for_subtrie(payload) // overwrites empty nodes below (see func)
+		current_node.Payload = payload
 	}
 }
 
-// Finish an insertion by writing the content data recursively.
-// An example why this is necessary:
-//	1. Prefix A is contained in prefix B, i.e. A is more specific than B
-//	2. A was added before B
-//	3. B needs to match more specific prefixes which are not in A
-//	4. TrieNodes below B exist as a connection to A, and may be
-//	   uninitialised (i.e. wth payload nil) if the differnce between both
-//	   prefix lengths is > 1
-//	5. If such empty TrieNodes exist, they need to be updated to B's
-//	   content, such that all addressis within B come back as a match
-func (node *TrieNode) set_for_subtrie(payload interface{}) {
-	if node != nil {
-		// The following check prevents more specific prefixes which
-		// already exist in the trie from being overwritten, if they're
-		// initialised.
-		// The second part of the OR is needed on the first call.
-		if node.Payload == nil || node.Payload == payload {
-			node.Payload = payload
-			node.LNode.set_for_subtrie(payload)
-			node.RNode.set_for_subtrie(payload)
-		}
+// Print Trie for debugging purposes. Normally called with ("", true) on a root node, but whatever.
+func (node *TrieNode) Print(prefix string, tail bool) {
+	if node == nil {
+		return
+	}
+	symbol := "#"
+	if node.Payload != nil {
+		symbol = fmt.Sprintf("%d", node.Payload)
+	}
+	if tail {
+		fmt.Println(prefix, "└─", symbol, fmt.Sprintf("(/%d)", len([]rune(prefix))/3))
+	} else {
+		fmt.Println(prefix, "├─", symbol, fmt.Sprintf("(/%d)", len([]rune(prefix))/3))
+	}
+	if tail {
+		prefix = prefix + "   "
+	} else {
+		prefix = prefix + " │ "
+	}
+	if node.LNode == nil && node.RNode == nil {
+		return
+	}
+	if node.LNode != nil {
+		node.LNode.Print(prefix, false)
+	} else {
+		fmt.Println(prefix, "├─ #", fmt.Sprintf("(/%d)", len([]rune(prefix))/3))
+	}
+	if node.RNode != nil {
+		node.RNode.Print(prefix, true)
+	} else {
+		fmt.Println(prefix, "└─ #", fmt.Sprintf("(/%d)", len([]rune(prefix))/3))
 	}
 }
 
@@ -106,6 +114,7 @@ func (node *TrieNode) set_for_subtrie(payload interface{}) {
 // The tree however needs to be built with the correct addresses.
 func (root *TrieNode) Lookup(ip net.IP) interface{} {
 	current_node := root
+	most_specific_payload := current_node.Payload
 
 	// Find maximum prefix length depending on query.
 	// Mind that the query has to match the Trie's IP version, else the
@@ -128,6 +137,9 @@ func (root *TrieNode) Lookup(ip net.IP) interface{} {
 		} else {
 			break
 		}
+		if current_node.Payload != nil {
+			most_specific_payload = current_node.Payload
+		}
 	}
-	return current_node.Payload
+	return most_specific_payload
 }
