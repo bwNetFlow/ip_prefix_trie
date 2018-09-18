@@ -58,7 +58,7 @@ func (root *TrieNode) Insert(payload interface{}, prefixes []string) {
 		var bits Uint128 = ip2int(ip)
 		// Iterate to the correct node under which we insert.
 		for i := 0; i < plen; i++ {
-			next_bit := bits.ShiftRight(uint(max_plen-i)).L & 1
+			next_bit := bits.ShiftRight(uint(max_plen-i-1)).L & 1
 			var next_node **TrieNode
 			if next_bit == 0 {
 				next_node = &current_node.LNode
@@ -77,26 +77,29 @@ func (root *TrieNode) Insert(payload interface{}, prefixes []string) {
 
 // Print Trie for debugging purposes. Normally called with ("", true) on a root node, but whatever.
 func (node *TrieNode) Print(prefix string, tail bool) {
-	if node == nil {
-		return
-	}
+	// set # as a symbol when there is no content
 	symbol := "#"
 	if node.Payload != nil {
 		symbol = fmt.Sprintf("%d", node.Payload)
 	}
+
+	// depending on whether we are a tail node, i.e. a right node as this a binary trie
 	if tail {
+		// this should be the case for root nodes, these shouldn't have same level neighbors
 		fmt.Println(prefix, "└─", symbol, fmt.Sprintf("(/%d)", len([]rune(prefix))/3))
-	} else {
-		fmt.Println(prefix, "├─", symbol, fmt.Sprintf("(/%d)", len([]rune(prefix))/3))
-	}
-	if tail {
 		prefix = prefix + "   "
 	} else {
+		// left nodes will need a line continuation
+		fmt.Println(prefix, "├─", symbol, fmt.Sprintf("(/%d)", len([]rune(prefix))/3))
 		prefix = prefix + " │ "
 	}
+
+	// if there aren't any children, don't bother to draw anything
 	if node.LNode == nil && node.RNode == nil {
 		return
 	}
+
+	// draw the children, either recursively or as a nice dead end
 	if node.LNode != nil {
 		node.LNode.Print(prefix, false)
 	} else {
@@ -114,7 +117,7 @@ func (node *TrieNode) Print(prefix string, tail bool) {
 // The tree however needs to be built with the correct addresses.
 func (root *TrieNode) Lookup(ip net.IP) interface{} {
 	current_node := root
-	most_specific_payload := current_node.Payload
+	var most_specific_payload interface{} // this var is used to remember any matches
 
 	// Find maximum prefix length depending on query.
 	// Mind that the query has to match the Trie's IP version, else the
@@ -127,18 +130,19 @@ func (root *TrieNode) Lookup(ip net.IP) interface{} {
 	}
 
 	var bits Uint128 = ip2int(ip)
+
 	// Lookup correct Trie Node iteratively.
-	for i := uint(max_plen); i > 0; i-- {
-		next_bit := bits.ShiftRight(i).L & 1
+	for i := uint(max_plen); i >= 0; i-- {
+		if current_node.Payload != nil {
+			most_specific_payload = current_node.Payload
+		}
+		next_bit := bits.ShiftRight(i-1).L & 1
 		if next_bit == 0 && current_node.LNode != nil {
 			current_node = current_node.LNode
 		} else if next_bit == 1 && current_node.RNode != nil {
 			current_node = current_node.RNode
 		} else {
 			break
-		}
-		if current_node.Payload != nil {
-			most_specific_payload = current_node.Payload
 		}
 	}
 	return most_specific_payload
