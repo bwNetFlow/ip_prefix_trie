@@ -20,9 +20,9 @@ link.
 ## Internal workings
 This module implements a standard trie, which operates on 0 and 1 for
 branching. Some care is taken to implement longest prefix matching (i.e.
-matching the most specific network) correctly. The payload contents are stored
-at every node (see Todo section) and are corrected when inserting another,
-longer (or equal) prefix. The code is thoroughly commented, go take a look.
+matching the most specific network) correctly. The Lookup method remembers the
+current most specific prefix while descending. The code is thoroughly
+commented, go take a look.
 
 Wikipedia has some more [details](https://en.wikipedia.org/wiki/Trie) on tries
 in general.
