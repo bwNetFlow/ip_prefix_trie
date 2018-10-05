@@ -117,7 +117,7 @@ func (node *TrieNode) Print(prefix string, tail bool) {
 // The tree however needs to be built with the correct addresses.
 func (root *TrieNode) Lookup(ip net.IP) interface{} {
 	current_node := root
-	var most_specific_payload interface{} // this var is used to remember any matches
+	most_specific_payload := root.Payload // this var is used to remember any matches
 
 	// Find maximum prefix length depending on query.
 	// Mind that the query has to match the Trie's IP version, else the
@@ -132,10 +132,7 @@ func (root *TrieNode) Lookup(ip net.IP) interface{} {
 	var bits Uint128 = ip2int(ip)
 
 	// Lookup correct Trie Node iteratively.
-	for i := uint(max_plen); i >= 0; i-- {
-		if current_node.Payload != nil {
-			most_specific_payload = current_node.Payload
-		}
+	for i := uint(max_plen); i > 0; i-- {
 		next_bit := bits.ShiftRight(i-1).L & 1
 		if next_bit == 0 && current_node.LNode != nil {
 			current_node = current_node.LNode
@@ -143,6 +140,9 @@ func (root *TrieNode) Lookup(ip net.IP) interface{} {
 			current_node = current_node.RNode
 		} else {
 			break
+		}
+		if current_node.Payload != nil {
+			most_specific_payload = current_node.Payload
 		}
 	}
 	return most_specific_payload
