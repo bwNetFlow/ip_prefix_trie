@@ -22,7 +22,7 @@ func TestLookupIPv4(t *testing.T) {
 	if matched_knr == nil || 123 != matched_knr.(int) {
 		t.Errorf("ERR: IP '%s' should match '123', was '%v'", ip, matched_knr)
 	} else {
-		t.Logf(" OK: IP '%s' matched KNR '123'", ip)
+		t.Logf(" OK: IP '%s' matched Cid '123'", ip)
 	}
 }
 
@@ -32,7 +32,7 @@ func TestLookupIPv6(t *testing.T) {
 	if matched_knr == nil || 123 != matched_knr.(int) {
 		t.Errorf("ERR: IP '%s' should match '123', was '%v'", ip, matched_knr)
 	} else {
-		t.Logf(" OK: IP '%s' matched KNR '123'", ip)
+		t.Logf(" OK: IP '%s' matched Cid '123'", ip)
 	}
 }
 
@@ -49,19 +49,19 @@ func TestSubTrieCorrectness(t *testing.T) {
 	if matched_knr1 == nil || 1 != matched_knr1.(int) {
 		t.Errorf("ERR: IP '%s' should match '1', was '%v'", ip1, matched_knr1)
 	} else {
-		t.Logf(" OK: IP '%s' matched KNR '1'", ip1)
+		t.Logf(" OK: IP '%s' matched Cid '1'", ip1)
 	}
 	matched_knr2 := my_trie.Lookup(ip2)
 	if matched_knr2 == nil || 2 != matched_knr2.(int) {
 		t.Errorf("ERR: IP '%s' should match '2', was '%v'", ip2, matched_knr2)
 	} else {
-		t.Logf(" OK: IP '%s' matched KNR '2'", ip2)
+		t.Logf(" OK: IP '%s' matched Cid '2'", ip2)
 	}
 	matched_knr3 := my_trie.Lookup(ip3)
 	if matched_knr3 == nil || 3 != matched_knr3.(int) {
 		t.Errorf("ERR: IP '%s' should match '3', was '%v'", ip3, matched_knr3)
 	} else {
-		t.Logf(" OK: IP '%s' matched KNR '3'", ip3)
+		t.Logf(" OK: IP '%s' matched Cid '3'", ip3)
 	}
 }
 
