@@ -125,7 +125,7 @@ func BenchmarkIPv6LookupHit(b *testing.B) {
 	}
 }
 
-func BenchmarkIPv4LookupPropableMiss(b *testing.B) {
+func BenchmarkIPv4LookupProbableMiss(b *testing.B) {
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
 
@@ -135,7 +135,7 @@ func BenchmarkIPv4LookupPropableMiss(b *testing.B) {
 	}
 }
 
-func BenchmarkIPv6LookupPropableMiss(b *testing.B) {
+func BenchmarkIPv6LookupProbableMiss(b *testing.B) {
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
 
