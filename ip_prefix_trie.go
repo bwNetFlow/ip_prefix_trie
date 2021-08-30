@@ -116,6 +116,9 @@ func (node *TrieNode) Print(prefix string, tail bool) {
 // Selects IPv4 or IPv6 mode, i.e. the correct prefix length, automatically.
 // The tree however needs to be built with the correct addresses.
 func (root *TrieNode) Lookup(ip net.IP) interface{} {
+	if ip == nil {
+		return nil
+	}
 	current_node := root
 	most_specific_payload := root.Payload // this var is used to remember any matches
 

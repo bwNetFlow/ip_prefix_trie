@@ -36,6 +36,13 @@ func TestLookupIPv6(t *testing.T) {
 	}
 }
 
+func TestLookupNil(t *testing.T) {
+	matched_knr := v6_trie.Lookup(nil)
+	if matched_knr == nil {
+		t.Logf(" OK: nil IP produced no error")
+	}
+}
+
 func TestSubTrieCorrectness(t *testing.T) {
 	var my_trie TrieNode
 	my_trie.Insert(1, []string{"0.0.0.0/0"})
